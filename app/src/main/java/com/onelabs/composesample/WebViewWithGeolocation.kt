@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 
+
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
 fun WebViewWithGeolocation(url: String) {
@@ -34,25 +34,25 @@ fun WebViewWithGeolocation(url: String) {
     val androidContext = LocalContext.current
 
     // Request location permission
-    // 1
     val requestLocationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
+        // 3
         hasLocationPermission = isGranted
     }
 
-    LaunchedEffect(Unit) {
-        // 2
-        if (ContextCompat.checkSelfPermission(
-                androidContext,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            hasLocationPermission = true
-        } else {
-            requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    }
+//    LaunchedEffect(Unit) {
+//        // 2
+//        if (ContextCompat.checkSelfPermission(
+//                androidContext,
+//                Manifest.permission.ACCESS_FINE_LOCATION
+//            ) == PackageManager.PERMISSION_GRANTED
+//        ) {
+//            hasLocationPermission = true
+//        } else {
+//            requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+//        }
+//    }
 
     Column {
         AndroidView(
@@ -82,14 +82,19 @@ fun WebViewWithGeolocation(url: String) {
                             origin: String?,
                             callback: GeolocationPermissions.Callback?
                         ) {
-                            // 3
-                            if (hasLocationPermission) {
+                            // 1
+                            if (ContextCompat.checkSelfPermission(
+                                        androidContext,
+                                        Manifest.permission.ACCESS_FINE_LOCATION
+                                    ) == PackageManager.PERMISSION_GRANTED )
+                            {
                                 callback?.invoke(origin, true, false)
                             }
-                            //                        else {
-                            //                            // Trigger the permission request
-                            //                            requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                            //                        }
+                            else {
+                                // 2
+                                // Trigger the permission request
+                                requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                            }
                         }
 
                         //                    override fun onGeolocationPermissionsHidePrompt() {
@@ -98,7 +103,10 @@ fun WebViewWithGeolocation(url: String) {
                         //                    }
                     }
 
-                    loadUrl(url)
+                    val noCacheHeaders: MutableMap<String, String> = HashMap(2)
+                    noCacheHeaders["Pragma"] = "no-cache"
+                    noCacheHeaders["Cache-Control"] = "no-cache"
+                    loadUrl(url, noCacheHeaders)
                     evaluateJavascript(
                         """"
                         receiveAccessToken('at')
@@ -113,7 +121,11 @@ fun WebViewWithGeolocation(url: String) {
                     // 4
                     //webView.reload() // Reload if permission is granted
                     webView.clearCache(true)
-                    webView.loadUrl(url)
+                    webView.clearHistory()
+//                    val noCacheHeaders: MutableMap<String, String> = HashMap(2)
+//                    noCacheHeaders["Pragma"] = "no-cache"
+//                    noCacheHeaders["Cache-Control"] = "no-cache"
+                    webView.loadUrl(url) //, noCacheHeaders)
                 }
             }
         )
