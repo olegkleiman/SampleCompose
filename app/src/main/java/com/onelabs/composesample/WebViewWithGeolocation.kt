@@ -34,8 +34,7 @@ fun WebViewWithGeolocation(url: String) {
     var hasLocationPermission by remember { mutableStateOf(false) }
     val androidContext = LocalContext.current
     var geoCallback : GeolocationPermissions.Callback? = null
-    val uri = Uri.parse(url)
-    val path = uri.path
+    var geoOrigin: String? = null
 
     // Request location permission
     val requestLocationPermissionLauncher = rememberLauncherForActivityResult(
@@ -43,7 +42,7 @@ fun WebViewWithGeolocation(url: String) {
     ) { isGranted: Boolean ->
         // 2
         hasLocationPermission = isGranted
-        geoCallback?.invoke(path, true, false)
+        geoCallback?.invoke(geoOrigin, true, false)
     }
 
     Column {
@@ -83,8 +82,9 @@ fun WebViewWithGeolocation(url: String) {
                                 callback?.invoke(origin, true, false)
                             }
                             else {
-                                // Store the callback member variables to be called later
+                                // Store the callback and origin member variables to be used later
                                 geoCallback = callback
+                                geoOrigin = origin
                                 // Trigger the permission request
                                 requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                             }
