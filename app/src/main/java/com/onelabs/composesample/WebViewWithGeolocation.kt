@@ -1,6 +1,7 @@
 package com.onelabs.composesample
 
 import android.Manifest
+import android.net.Uri
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.util.Log
@@ -32,26 +33,17 @@ import androidx.core.content.ContextCompat
 fun WebViewWithGeolocation(url: String) {
     var hasLocationPermission by remember { mutableStateOf(false) }
     val androidContext = LocalContext.current
+    var geoCallback : GeolocationPermissions.Callback? = null
+    val uri = Uri.parse(url)
+    val path = uri.path
 
     // Request location permission
-    // 1
     val requestLocationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
-        hasLocationPermission = isGranted
-    }
-
-    LaunchedEffect(Unit) {
         // 2
-        if (ContextCompat.checkSelfPermission(
-                androidContext,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            hasLocationPermission = true
-        } else {
-            requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
+        hasLocationPermission = isGranted
+        geoCallback?.invoke(path, true, false)
     }
 
     Column {
@@ -82,20 +74,21 @@ fun WebViewWithGeolocation(url: String) {
                             origin: String?,
                             callback: GeolocationPermissions.Callback?
                         ) {
-                            // 3
-                            if (hasLocationPermission) {
+                            // 1
+                            if (ContextCompat.checkSelfPermission(
+                                    androidContext,
+                                    Manifest.permission.ACCESS_FINE_LOCATION
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
                                 callback?.invoke(origin, true, false)
                             }
-                            //                        else {
-                            //                            // Trigger the permission request
-                            //                            requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                            //                        }
+                            else {
+                                // Store the callback member variables to be called later
+                                geoCallback = callback
+                                // Trigger the permission request
+                                requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                            }
                         }
-
-                        //                    override fun onGeolocationPermissionsHidePrompt() {
-                        //                        // 3a
-                        //                        reload()
-                        //                    }
                     }
 
                     loadUrl(url)
@@ -108,14 +101,14 @@ fun WebViewWithGeolocation(url: String) {
                     }
                 }
             },
-            update = { webView ->
-                if (hasLocationPermission) {
-                    // 4
-                    //webView.reload() // Reload if permission is granted
-                    webView.clearCache(true)
-                    webView.loadUrl(url)
-                }
-            }
+//            update = { webView ->
+//                if (hasLocationPermission) {
+//                    // 4
+//                    //webView.reload() // Reload if permission is granted
+//                    webView.clearCache(true)
+//                    webView.loadUrl(url)
+//                }
+//            }
         )
         Button(onClick = {
             //webView.reload()
