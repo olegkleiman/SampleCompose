@@ -28,13 +28,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 
+object GeoJSCallback {
+    var geoCallback : GeolocationPermissions.Callback? = null
+    var geoOrigin: String? = null
+}
+
 @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
 fun WebViewWithGeolocation(url: String) {
     var hasLocationPermission by remember { mutableStateOf(false) }
     val androidContext = LocalContext.current
-    var geoCallback : GeolocationPermissions.Callback? = null
-    var geoOrigin: String? = null
 
     // Request location permission
     val requestLocationPermissionLauncher = rememberLauncherForActivityResult(
@@ -42,7 +45,7 @@ fun WebViewWithGeolocation(url: String) {
     ) { isGranted: Boolean ->
         // 2
         hasLocationPermission = isGranted
-        geoCallback?.invoke(geoOrigin, true, false)
+        GeoJSCallback.geoCallback?.invoke(GeoJSCallback.geoOrigin, true, false)
     }
 
     Column {
@@ -82,9 +85,9 @@ fun WebViewWithGeolocation(url: String) {
                                 callback?.invoke(origin, true, false)
                             }
                             else {
-                                // Store the callback and origin member variables to be used later
-                                geoCallback = callback
-                                geoOrigin = origin
+                                // Store the callback and origin in static variables to be used later
+                                GeoJSCallback.geoCallback = callback
+                                GeoJSCallback.geoOrigin = origin
                                 // Trigger the permission request
                                 requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                             }
@@ -101,14 +104,7 @@ fun WebViewWithGeolocation(url: String) {
                     }
                 }
             },
-//            update = { webView ->
-//                if (hasLocationPermission) {
-//                    // 4
-//                    //webView.reload() // Reload if permission is granted
-//                    webView.clearCache(true)
-//                    webView.loadUrl(url)
-//                }
-//            }
+
         )
         Button(onClick = {
             //webView.reload()
